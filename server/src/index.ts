@@ -5,6 +5,7 @@ import {RESTDataSource, Request, Response, RequestOptions, HTTPCache} from 'apol
 import { ApolloError } from 'apollo-server-core';
 import { DataSourceConfig } from 'apollo-datasource';
 import { fetch, RequestInit } from 'apollo-server-env';
+import cors from 'cors'
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
@@ -15,8 +16,10 @@ const typeDefs = gql`
   type Track {
     id: String
     name: String 
+    uri: String
     album: Album 
     popularity: Int
+    artists: [Artist]
   }
 
   type Album {
@@ -33,6 +36,7 @@ const typeDefs = gql`
 
   type Query {
     artists(name: String): [Artist]
+    related(id: String): [Artist]
   }
 `;
 
@@ -52,6 +56,9 @@ const resolvers: IResolvers = {
     artists: (source, {name}, {dataSources}) => {
       return dataSources.spotifyAPI.search(name, 'artist');
     },
+    related: (source, {id}, {dataSources}) => {
+      return dataSources.spotifyAPI.getRelatedArtists(id);
+    },
   },
   Artist: {
     related: ({id}, params, {dataSources}) => {
@@ -68,6 +75,8 @@ const resolvers: IResolvers = {
 
 const app = express();
 
+app.use(cors());
+
 const buff = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`);
 const auth = buff.toString('base64')
 app.get('/', function(req, response) {
@@ -80,6 +89,7 @@ app.get('/', function(req, response) {
     json: true
   };
 
+
   request.post('https://accounts.spotify.com/api/token', options, ((error, res, {access_token}) => {
     console.log(access_token);
 
@@ -89,7 +99,7 @@ app.get('/', function(req, response) {
 
     const server = new ApolloServer({ typeDefs, resolvers, dataSources});
     server.applyMiddleware({ app });
-    response.redirect('/graphql');
+    response.json({token: access_token});
   }),);
 });
 
@@ -160,7 +170,6 @@ class SpotifyWebAPI <TContext = any> extends RESTDataSource{
   async get(path: string, params?: {[key: string]: Object | Object[] | undefined}): Promise<any> {
     const handleResponse = (response: Response) => {
       if (response.status === 429) {
-        console.log('429!!!!!!!!!!!!!!!!!!!!!!!!!!');
         return this.get(path, params);
       } 
       throw new Error('unknown');
