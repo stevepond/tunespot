@@ -1,0 +1,22 @@
+{
+  "name": "graphql-server-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node build/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-datasource-rest": "^0.6.9",
+    "apollo-server": "^2.9.13",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.4",
+    "@types/request": "^2.48.3"
+  }
+}
